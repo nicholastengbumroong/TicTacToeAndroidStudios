@@ -72,198 +72,88 @@ public class Computer extends Board implements View.OnClickListener {
             reset();
         else if (!((Button) v).getText().equals(""))
             return;
-
         else {
             ((Button) v).setText("O");
-            //playerTurn = !playerTurn;
-            if(didOWin()){
-                player1Score++;
-                player1ScoreText.setText(Integer.toString(player1Score));
-                AlertDialog.Builder draw = new AlertDialog.Builder(Computer.this);
-                draw.setMessage("PLAYER 1 WINS!");
-                draw.setPositiveButton("Play Again", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        softReset();
-                    }
-                });
-                AlertDialog dialog = draw.show();
-
-                TextView messageView = (TextView)dialog.findViewById(android.R.id.message);
-                messageView.setGravity(Gravity.CENTER_HORIZONTAL);
-
-                final Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                LinearLayout.LayoutParams positiveButtonLL = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
-                positiveButtonLL.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                positiveButton.setLayoutParams(positiveButtonLL);
-
+            // After player move, checks to see if player won
+            if (didOWin()){
+                OWon();
                 return;
             }
+            // if player did not win, checks to see if draw
             if (checkDraw()){
                 return;
             }
-/*
-            if (checkPreWinState()){
-                System.out.println("Mark: " + getResources().getResourceEntryName(mark.getId()));
-                mark.setText("X");
+            // if there is no draw, ai makes move
+            System.out.println("Calculating best move");
+            makeBestMove();
 
-                if (didXWin()){
-                    player2Score++;
-                    player2ScoreText.setText(Integer.toString(player2Score));
-
-                    AlertDialog.Builder draw = new AlertDialog.Builder(Computer.this);
-                    draw.setMessage("COMPUTER WINS!");
-                    draw.setPositiveButton("Play Again", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            softReset();
-                        }
-                    });
-                    AlertDialog dialog = draw.show();
-
-                    TextView messageView = (TextView)dialog.findViewById(android.R.id.message);
-                    messageView.setGravity(Gravity.CENTER_HORIZONTAL);
-
-                    final Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                    LinearLayout.LayoutParams positiveButtonLL = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
-                    positiveButtonLL.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                    positiveButton.setLayoutParams(positiveButtonLL);
-                    return;
-                }
-                if (checkDraw()){
-                    return;
-                }
-                return;
-
-            }
-*/
-            callMiniMax(0, false);
-            for (ButtonAndScore btn : childrenScores) {
-                System.out.println(getResources().getResourceEntryName(btn.getButtonId()) + ":" + btn.score);
-            }
-            makeMove(findBestMove(), false);
-
+            // after ai move, checks to see if ai won
             if (didXWin()){
-                player2Score++;
-                player2ScoreText.setText(Integer.toString(player2Score));
-
-                AlertDialog.Builder draw = new AlertDialog.Builder(Computer.this);
-                draw.setMessage("COMPUTER WINS!");
-                draw.setPositiveButton("Play Again", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        softReset();
-                    }
-                });
-                AlertDialog dialog = draw.show();
-
-                TextView messageView = (TextView)dialog.findViewById(android.R.id.message);
-                messageView.setGravity(Gravity.CENTER_HORIZONTAL);
-
-                final Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                LinearLayout.LayoutParams positiveButtonLL = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
-                positiveButtonLL.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                positiveButton.setLayoutParams(positiveButtonLL);
+                XWon();
             }
+            // if ai did not win, checks to see if draw
             checkDraw();
             }
-
-
         }
 
-
-
-    ArrayList<ButtonAndScore> childrenScores;
-
-    public Button findBestMove(){
-        int max = -1000;
-        int bestBtn = 0;
-
-        for (int i = 0; i < childrenScores.size(); i++){
-            if (max < childrenScores.get(i).getButtonScore()){
-                max = childrenScores.get(i).getButtonScore();
-                bestBtn = i;
+    // computer is X and maximizer
+    // player is O and minimizer
+    public void makeBestMove(){
+        //Computer makes move
+       int bestScore = -100;
+       Button move = null;
+       ArrayList<Button> availableButtons = getAvailableButtons();
+       ArrayList<ButtonAndScore> childrenScores = new ArrayList<>();
+        for (Button button: availableButtons) {
+            //System.out.println("Depth: " + 0 + "; " + "X Move: " + getResources().getResourceEntryName(button.getId()));
+            button.setText("X");
+            int score = miniMax(1, false);
+            button.setText("");
+            childrenScores.add(new ButtonAndScore(button, score));
+            if (score > bestScore){
+                bestScore = score;
+                move = button;
             }
         }
-        System.out.println("Best Move: " + getResources().getResourceEntryName(childrenScores.get(bestBtn).getButtonId()));
-        return childrenScores.get(bestBtn).button;
+        for(ButtonAndScore scores: childrenScores){
+            System.out.println(getResources().getResourceEntryName(scores.getButtonId()) + ":" + scores.getButtonScore());
+        }
+        move.setText("X");
     }
 
-    public void callMiniMax(int depth, boolean playerTurn){
-        childrenScores = new ArrayList<>();
-        miniMax(depth, playerTurn);
-    }
+    public int miniMax(int depth, boolean isMaximizing) {
 
-    public int miniMax(int depth, boolean playerTurn){
-
-        ArrayList<Integer> scores = new ArrayList<Integer>();
-        ArrayList<Button> availableButtons = new ArrayList<Button>();
-        availableButtons = getAvailableButtons();
+        ArrayList<Button> availableButtons = getAvailableButtons();
 
         if (didXWin())
-            return 1;
+            return 10;
         if (didOWin())
-            return -1;
+            return -10;
         if (availableButtons.size() == 0)
             return 0;
 
-        for (int i = 0; i < availableButtons.size(); i++) {
-            Button button = availableButtons.get(i);
-            if (playerTurn) {
-                makeMove(button, true);
-                System.out.println("O move: "  + getResources().getResourceEntryName(button.getId()));
-                int currentScore = miniMax(depth + 1, false);
-                scores.add(currentScore);
-
-
-            }
-            else {
-                makeMove(button, false);
-                System.out.println("X move: "  + getResources().getResourceEntryName(button.getId()));
-                int currentScore = miniMax(depth + 1, true);
-                scores.add(currentScore);
-
-
-                if (depth == 0) {
-                    childrenScores.add(new ButtonAndScore(button, currentScore));
-                }
-
-            }
-            button.setText("");
-        }
-
-        for (int score : scores){
-            System.out.print(score + " ");
-        }
-        System.out.println();
-        if (playerTurn)
-            return getMax(scores);
-        else
-            return getMin(scores);
-    }
-
-    public int getMax(ArrayList<Integer> scores){
-        int max = -1000;
-        int index = 0;
-        for (int i = 0; i < scores.size(); i++){
-            if (scores.get(i) > max){
-                max = scores.get(i);
-                index = i;
+        for (Button button: availableButtons) {
+            if (isMaximizing) {
+                int bestScore = -1000;
+                //System.out.println("Depth: " + depth + "; " + "X Move: " + getResources().getResourceEntryName(button.getId()));
+                button.setText("X");
+                int score = miniMax(depth + 1, false);
+                button.setText("");
+                bestScore = Math.max(score, bestScore);
+                //System.out.println("Max: " + bestScore);
+                return bestScore;
+            } else {
+                int bestScore = 1000;
+                //System.out.println("Depth: " + depth + "; " + "O Move: " + getResources().getResourceEntryName(button.getId()));
+                button.setText("O");
+                int score = miniMax(depth + 1, true);
+                button.setText("");
+                bestScore = Math.min(score, bestScore);
+                //System.out.println("Min: " + bestScore);
+                return bestScore;
             }
         }
-        return scores.get(index);
-    }
-
-    public int getMin(ArrayList<Integer> scores){
-        int min = 1000;
-        int index = 0;
-        for (int i = 0; i < scores.size(); i++){
-            if (scores.get(i) < min){
-                min = scores.get(i);
-                index = i;
-            }
-        }
-        return scores.get(index);
+        return 0;
     }
 
 
@@ -301,20 +191,50 @@ public class Computer extends Board implements View.OnClickListener {
        }
        return false;
    }
-/*
-    public boolean isGameOver(){
-        if (didXWin() || didOWin() || getAvailableButtons().isEmpty()){
-            return true;
-        }
-        else
-            return false;
+
+    public void XWon(){
+        player2Score++;
+        player2ScoreText.setText(Integer.toString(player2Score));
+
+        AlertDialog.Builder draw = new AlertDialog.Builder(Computer.this);
+        draw.setMessage("COMPUTER WINS!");
+        draw.setPositiveButton("Play Again", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                softReset();
+            }
+        });
+        AlertDialog dialog = draw.show();
+
+        TextView messageView = (TextView)dialog.findViewById(android.R.id.message);
+        messageView.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        final Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        LinearLayout.LayoutParams positiveButtonLL = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
+        positiveButtonLL.width = ViewGroup.LayoutParams.MATCH_PARENT;
+        positiveButton.setLayoutParams(positiveButtonLL);
     }
-*/
-    public void makeMove(Button button, boolean playerTurn){
-        if (playerTurn)
-            button.setText("O");
-        else
-            button.setText("X");
+
+    public void OWon(){
+        player1Score++;
+        player1ScoreText.setText(Integer.toString(player1Score));
+        AlertDialog.Builder draw = new AlertDialog.Builder(Computer.this);
+        draw.setMessage("PLAYER 1 WINS!");
+        draw.setPositiveButton("Play Again", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                softReset();
+            }
+        });
+        AlertDialog dialog = draw.show();
+
+        TextView messageView = (TextView)dialog.findViewById(android.R.id.message);
+        messageView.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        final Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        LinearLayout.LayoutParams positiveButtonLL = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
+        positiveButtonLL.width = ViewGroup.LayoutParams.MATCH_PARENT;
+        positiveButton.setLayoutParams(positiveButtonLL);
     }
 
     public boolean checkDraw(){
@@ -430,6 +350,7 @@ public class Computer extends Board implements View.OnClickListener {
 
     }
 }
+
 
 
 

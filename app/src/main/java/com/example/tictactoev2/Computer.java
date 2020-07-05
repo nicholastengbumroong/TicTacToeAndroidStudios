@@ -99,24 +99,17 @@ public class Computer extends Board implements View.OnClickListener {
     // computer is X and maximizer
     // player is O and minimizer
     public void makeBestMove(){
-        //Computer makes move
        int bestScore = -100;
        Button move = null;
        ArrayList<Button> availableButtons = getAvailableButtons();
-       ArrayList<ButtonAndScore> childrenScores = new ArrayList<>();
         for (Button button: availableButtons) {
-            //System.out.println("Depth: " + 0 + "; " + "X Move: " + getResources().getResourceEntryName(button.getId()));
             button.setText("X");
             int score = miniMax(1, false);
             button.setText("");
-            childrenScores.add(new ButtonAndScore(button, score));
             if (score > bestScore){
                 bestScore = score;
                 move = button;
             }
-        }
-        for(ButtonAndScore scores: childrenScores){
-            System.out.println(getResources().getResourceEntryName(scores.getButtonId()) + ":" + scores.getButtonScore());
         }
         move.setText("X");
     }
@@ -126,34 +119,33 @@ public class Computer extends Board implements View.OnClickListener {
         ArrayList<Button> availableButtons = getAvailableButtons();
 
         if (didXWin())
-            return 10;
+            return 1;
         if (didOWin())
-            return -10;
+            return -1;
         if (availableButtons.size() == 0)
             return 0;
 
-        for (Button button: availableButtons) {
             if (isMaximizing) {
-                int bestScore = -1000;
-                //System.out.println("Depth: " + depth + "; " + "X Move: " + getResources().getResourceEntryName(button.getId()));
-                button.setText("X");
-                int score = miniMax(depth + 1, false);
-                button.setText("");
-                bestScore = Math.max(score, bestScore);
-                //System.out.println("Max: " + bestScore);
+                int bestScore = -100;
+                for (Button button: availableButtons) {
+                    button.setText("X");
+                    int score = miniMax(depth + 1, false);
+                    button.setText("");
+                    bestScore = Math.max(score, bestScore);
+                }
                 return bestScore;
+
             } else {
-                int bestScore = 1000;
-                //System.out.println("Depth: " + depth + "; " + "O Move: " + getResources().getResourceEntryName(button.getId()));
-                button.setText("O");
-                int score = miniMax(depth + 1, true);
-                button.setText("");
-                bestScore = Math.min(score, bestScore);
-                //System.out.println("Min: " + bestScore);
+                int bestScore = 100;
+                for (Button button: availableButtons) {
+                    button.setText("O");
+                    int score = miniMax(depth + 1, true);
+                    button.setText("");
+                    bestScore = Math.min(score, bestScore);
+                }
                 return bestScore;
             }
-        }
-        return 0;
+
     }
 
 
